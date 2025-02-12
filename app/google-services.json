@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "265262287682",
+    "project_id": "minichat-c29df",
+    "storage_bucket": "minichat-c29df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:265262287682:android:151ce9cb411af5824a56db",
+        "android_client_info": {
+          "package_name": "com.codewithkael.androidminichatwithwebrtc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAimdLby0BrtfbO8oDv2zljDWtYBLC10Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
