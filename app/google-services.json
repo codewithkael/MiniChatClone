@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "265262287682",
+    "firebase_url": "https://minichat-c29df-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "minichat-c29df",
     "storage_bucket": "minichat-c29df.firebasestorage.app"
   },
