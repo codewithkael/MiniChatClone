@@ -26,7 +26,7 @@ class SharedPrefHelper @Inject constructor(context: Context) {
         } else {
             // If USER_ID exists, return it
 //            userId
-            "asdw23"
+            "Masoud"
         }
     }
 

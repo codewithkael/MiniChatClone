@@ -6,6 +6,6 @@ import dagger.hilt.android.HiltAndroidApp
 @HiltAndroidApp
 class MiniChatApplication : Application() {
     companion object {
-        const val TAG = "MiniChat"
+        const val TAG = "Masoud-MiniChat"
     }
 }

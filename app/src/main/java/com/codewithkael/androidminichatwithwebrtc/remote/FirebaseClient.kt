@@ -1,8 +1,10 @@
 package com.codewithkael.androidminichatwithwebrtc.remote
 
 import android.util.Log
+import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes.*
 import com.codewithkael.androidminichatwithwebrtc.utils.FirebaseFieldNames
 import com.codewithkael.androidminichatwithwebrtc.utils.MatchState
+import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
 import com.codewithkael.androidminichatwithwebrtc.utils.MyValueEventListener
 import com.codewithkael.androidminichatwithwebrtc.utils.SharedPrefHelper
 import com.google.firebase.database.DataSnapshot
@@ -20,7 +22,7 @@ class FirebaseClient @Inject constructor(
     fun observeUserStatus(callback: (MatchState) -> Unit) {
         updateSelfStatus(
             StatusDataModel(
-                type = StatusDataModelTypes.LookingForMatch
+                type = LookingForMatch
             )
         )
         database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
@@ -30,21 +32,22 @@ class FirebaseClient @Inject constructor(
                     val status = snapshot.getValue(StatusDataModel::class.java)
                     status?.let {
                         when (status.type) {
-                            StatusDataModelTypes.LookingForMatch -> {
+                            LookingForMatch -> {
                                 callback(MatchState.LookingForMatch)
                             }
 
                             null -> {
-                                updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch))
+                                updateSelfStatus(StatusDataModel(type = LookingForMatch))
                                 callback(MatchState.LookingForMatch)
                             }
 
-                            StatusDataModelTypes.MatchFound -> {}
+                            OfferedMatch -> {}
+                            ReceivedMatch -> {}
                         }
                     } ?: let {
                         updateSelfStatus(
                             StatusDataModel(
-                                type = StatusDataModelTypes.LookingForMatch
+                                type = LookingForMatch
                             )
                         )
                         callback(MatchState.LookingForMatch)
@@ -61,16 +64,17 @@ class FirebaseClient @Inject constructor(
 
     fun findNextMatch() {
         findAvailableParticipant { foundTarget ->
-            Log.d("TAG", "findNextMatch: $foundTarget")
+            Log.d(TAG, "findNextMatch: $foundTarget")
             foundTarget?.let { target ->
                 database.child(FirebaseFieldNames.USERS).child(target)
                     .child(FirebaseFieldNames.STATUS).setValue(
                         StatusDataModel(
                             participant = prefHelper.getUserId(),
-                            type = StatusDataModelTypes.MatchFound
+                            type = ReceivedMatch
                         )
                     )
-                updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.MatchFound, participant = target))
+                updateSelfStatus(StatusDataModel(type = OfferedMatch, participant = target))
+                //start webrtc connection
             }
         }
     }
@@ -78,7 +82,7 @@ class FirebaseClient @Inject constructor(
         // Query the database to find participants with status "LookingForMatch"
         database.child(FirebaseFieldNames.USERS)
             .orderByChild("status/type")  // Adjust the path based on your actual data structure
-            .equalTo(StatusDataModelTypes.LookingForMatch.name)
+            .equalTo(LookingForMatch.name)
             .addListenerForSingleValueEvent(object : MyValueEventListener() {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     // Iterate over all children to find a valid participant
@@ -94,7 +98,7 @@ class FirebaseClient @Inject constructor(
 
                 override fun onCancelled(error: DatabaseError) {
                     // Handle error (optional)
-                    Log.e("TAG", "Database query cancelled", error.toException())
+                    Log.e(TAG, "Database query cancelled", error.toException())
                     callback(null)  // Return null in case of an error
                 }
             })
