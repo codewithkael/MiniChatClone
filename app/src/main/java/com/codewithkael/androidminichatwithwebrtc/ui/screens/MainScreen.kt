@@ -83,7 +83,7 @@ fun MainScreen() {
             SurfaceViewRendererComposable(
                 modifier = Modifier.fillMaxSize(),
                 onSurfaceReady = { renderer ->
-                    // viewModel.setLargeScreenRenderer(renderer)
+                     viewModel.initRemoteSurfaceView(renderer)
                 })
         }
         Row(
@@ -101,7 +101,7 @@ fun MainScreen() {
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            if (matchState.value == MatchState.LookingForMatch) {
+            if (matchState.value != MatchState.NewState) {
                 Box(
                     modifier = Modifier
                         .weight(1f) // This will make the Box take up 1f of the available space

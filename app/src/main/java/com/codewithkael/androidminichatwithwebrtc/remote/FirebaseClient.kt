@@ -1,15 +1,19 @@
 package com.codewithkael.androidminichatwithwebrtc.remote
 
 import android.util.Log
-import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes.*
+import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes.LookingForMatch
+import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes.OfferedMatch
+import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes.ReceivedMatch
 import com.codewithkael.androidminichatwithwebrtc.utils.FirebaseFieldNames
 import com.codewithkael.androidminichatwithwebrtc.utils.MatchState
 import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
 import com.codewithkael.androidminichatwithwebrtc.utils.MyValueEventListener
 import com.codewithkael.androidminichatwithwebrtc.utils.SharedPrefHelper
+import com.codewithkael.androidminichatwithwebrtc.utils.SignalDataModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
+import com.google.gson.Gson
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,9 +21,11 @@ import javax.inject.Singleton
 class FirebaseClient @Inject constructor(
     private val database: DatabaseReference,
     private val prefHelper: SharedPrefHelper,
+    private val gson: Gson
 ) {
 
     fun observeUserStatus(callback: (MatchState) -> Unit) {
+        removeSelfData()
         updateSelfStatus(
             StatusDataModel(
                 type = LookingForMatch
@@ -33,16 +39,21 @@ class FirebaseClient @Inject constructor(
                     status?.let {
                         when (status.type) {
                             LookingForMatch -> {
-                                callback(MatchState.LookingForMatch)
+                                callback(MatchState.LookingForMatchState)
                             }
 
                             null -> {
                                 updateSelfStatus(StatusDataModel(type = LookingForMatch))
-                                callback(MatchState.LookingForMatch)
+                                callback(MatchState.LookingForMatchState)
                             }
 
-                            OfferedMatch -> {}
-                            ReceivedMatch -> {}
+                            OfferedMatch -> {
+                                callback(MatchState.OfferedMatchState(status.participant!!))
+                            }
+
+                            ReceivedMatch -> {
+                                callback(MatchState.ReceivedMatchState(status.participant!!))
+                            }
                         }
                     } ?: let {
                         updateSelfStatus(
@@ -50,27 +61,51 @@ class FirebaseClient @Inject constructor(
                                 type = LookingForMatch
                             )
                         )
-                        callback(MatchState.LookingForMatch)
+                        callback(MatchState.LookingForMatchState)
                     }
                 }
             })
     }
 
+    fun observeIncomingSignals(callback: (SignalDataModel) -> Unit) {
+        database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
+            .child(FirebaseFieldNames.DATA).addValueEventListener(object : MyValueEventListener() {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    super.onDataChange(snapshot)
+                    runCatching {
+                        gson.fromJson(snapshot.value.toString(), SignalDataModel::class.java)
+                    }.onSuccess {
+                        if (it!=null){
+                            callback(it)
+                        }
+                    }.onFailure {
+                        Log.d(TAG, "onDataChange: ${it.message}")
+                    }
+
+                }
+            })
+    }
+
+    fun updateParticipantDataModel(participantId: String, data: SignalDataModel) {
+        database.child(FirebaseFieldNames.USERS).child(participantId).child(FirebaseFieldNames.DATA)
+            .setValue(gson.toJson(data))
+    }
 
     fun updateSelfStatus(status: StatusDataModel) {
         database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
             .child(FirebaseFieldNames.STATUS).setValue(status)
     }
 
+
     fun findNextMatch() {
+        removeSelfData()
         findAvailableParticipant { foundTarget ->
             Log.d(TAG, "findNextMatch: $foundTarget")
             foundTarget?.let { target ->
                 database.child(FirebaseFieldNames.USERS).child(target)
                     .child(FirebaseFieldNames.STATUS).setValue(
                         StatusDataModel(
-                            participant = prefHelper.getUserId(),
-                            type = ReceivedMatch
+                            participant = prefHelper.getUserId(), type = ReceivedMatch
                         )
                     )
                 updateSelfStatus(StatusDataModel(type = OfferedMatch, participant = target))
@@ -78,6 +113,7 @@ class FirebaseClient @Inject constructor(
             }
         }
     }
+
     private fun findAvailableParticipant(callback: (String?) -> Unit) {
         // Query the database to find participants with status "LookingForMatch"
         database.child(FirebaseFieldNames.USERS)
@@ -102,5 +138,10 @@ class FirebaseClient @Inject constructor(
                     callback(null)  // Return null in case of an error
                 }
             })
+    }
+
+    private fun removeSelfData() {
+        database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
+            .child(FirebaseFieldNames.DATA).removeValue()
     }
 }
