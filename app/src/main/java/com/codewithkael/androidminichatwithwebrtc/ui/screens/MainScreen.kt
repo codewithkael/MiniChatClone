@@ -74,7 +74,6 @@ fun MainScreen() {
             .background(Color(0xFFEAEAEA)) // Background color
 
     ) {
-        // Top video screen (large screen)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,9 +82,17 @@ fun MainScreen() {
             SurfaceViewRendererComposable(
                 modifier = Modifier.fillMaxSize(),
                 onSurfaceReady = { renderer ->
-                     viewModel.initRemoteSurfaceView(renderer)
-                })
+                    viewModel.initRemoteSurfaceView(renderer)
+                },
+                message = when (matchState.value) {
+                    MatchState.LookingForMatchState -> "Looking For Match ..."
+                    MatchState.IDLE -> "Not Looking For Match, Press Start"
+                    else -> null
+                }
+            )
         }
+
+
         Row(
             Modifier
                 .fillMaxWidth()
@@ -122,14 +129,17 @@ fun MainScreen() {
                             .align(Alignment.BottomEnd) // Align it to the bottom-right of the Box
                             .padding(3.dp)
                             .size(30.dp)
-                       
+
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_switch_camera),
                             contentDescription = "Switch Camera",
                             tint = Color(0xE4E5E5E5),
-                            modifier = Modifier.size(30.dp)
-                                .background(color= Color(0x465B5B5B), shape = RoundedCornerShape(5.dp))
+                            modifier = Modifier
+                                .size(30.dp)
+                                .background(
+                                    color = Color(0x465B5B5B), shape = RoundedCornerShape(5.dp)
+                                )
                                 .padding(5.dp)
 
                         )
@@ -178,9 +188,9 @@ fun MainScreen() {
                     modifier = Modifier.weight(1f)
                 ) {
                     IconButton(
-                        onClick = { /* Handle record action */ },
-                        Modifier.weight(5f),
-                        colors = IconButtonDefaults.iconButtonColors(
+                        onClick = {
+                            viewModel.stopLookingForMatch()
+                        }, Modifier.weight(5f), colors = IconButtonDefaults.iconButtonColors(
                             containerColor = Color(
                                 0xFFC294A4
                             )
@@ -198,9 +208,9 @@ fun MainScreen() {
                     Spacer(modifier = Modifier.weight(0.25f))
 
                     IconButton(
-                        onClick = { /* Handle play action */ },
-                        Modifier.weight(5f),
-                        colors = IconButtonDefaults.iconButtonColors(
+                        onClick = {
+                            viewModel.findNextMatch()
+                        }, Modifier.weight(5f), colors = IconButtonDefaults.iconButtonColors(
                             containerColor = Color(0xFFA4BAD1)
                         )
                     ) {
@@ -220,7 +230,7 @@ fun MainScreen() {
 
         // Footer text - rules and notice
         Text(
-            text = "By using this videchat you agree with our rules. Rules violators will be banned. Try to keep your face visible in camera frame.",
+            text = "By using this video chat you agree with our rules. Rules violators will be banned. Try to keep your face visible in camera frame.",
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.5f)

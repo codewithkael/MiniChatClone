@@ -5,6 +5,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.codewithkael.androidminichatwithwebrtc.remote.FirebaseClient
+import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModel
+import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes
 import com.codewithkael.androidminichatwithwebrtc.utils.MatchState
 import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
 import com.codewithkael.androidminichatwithwebrtc.utils.SignalDataModel
@@ -36,7 +38,7 @@ class MainViewModel @Inject constructor(
     private val rtcAudioManager by lazy { RTCAudioManager.create(application) }
     private var rtcClient: RTCClient? = null
     private var remoteSurface: SurfaceViewRenderer? = null
-    private var participant: String = "test-participant"
+    private var participantId: String = "test-participant"
 
     var matchState: MutableStateFlow<MatchState> = MutableStateFlow(MatchState.NewState)
         private set
@@ -51,6 +53,7 @@ class MainViewModel @Inject constructor(
             when (status) {
                 is MatchState.ReceivedMatchState -> handleIncomingMatchCase(status)
                 is MatchState.OfferedMatchState -> handleSentOffer(status)
+                is MatchState.LookingForMatchState -> handleLookingForMatch()
                 else -> Unit
             }
         }
@@ -64,33 +67,39 @@ class MainViewModel @Inject constructor(
             }
         }
 
+        findNextMatch()
+    }
+
+    private fun handleLookingForMatch() {
+        rtcClient?.onDestroy()
         firebaseClient.findNextMatch()
     }
 
     private fun handleReceivedIceCandidate(signalDataModel: SignalDataModel) {
-        runCatching { gson.fromJson(signalDataModel.data.toString(), IceCandidate::class.java) }
-            .onSuccess {
-                rtcClient?.onIceCandidateReceived(it)
-            }.onFailure {
-                Log.d(TAG, "handleReceivedIceCandidate: ${it.message}")
-            }
+        runCatching {
+            gson.fromJson(
+                signalDataModel.data.toString(), IceCandidate::class.java
+            )
+        }.onSuccess {
+            rtcClient?.onIceCandidateReceived(it)
+        }.onFailure {
+            Log.d(TAG, "handleReceivedIceCandidate: ${it.message}")
+        }
     }
 
     private fun handleReceivedAnswerSdp(signalDataModel: SignalDataModel) {
         rtcClient?.onRemoteSessionReceived(
             SessionDescription(
-                SessionDescription.Type.ANSWER,
-                signalDataModel.data.toString()
+                SessionDescription.Type.ANSWER, signalDataModel.data.toString()
             )
         )
     }
 
     private fun handleReceivedOfferSdp(signalDataModel: SignalDataModel) {
-        setupRtcConnection(participant)?.also {
+        setupRtcConnection(participantId)?.also {
             it.onRemoteSessionReceived(
                 SessionDescription(
-                    SessionDescription.Type.OFFER,
-                    signalDataModel.data.toString()
+                    SessionDescription.Type.OFFER, signalDataModel.data.toString()
                 )
             )
             it.answer()
@@ -98,12 +107,12 @@ class MainViewModel @Inject constructor(
     }
 
     private fun handleSentOffer(status: MatchState.OfferedMatchState) {
-        this.participant = status.participant
+        this.participantId = status.participant
     }
 
     private fun handleIncomingMatchCase(status: MatchState.ReceivedMatchState) {
-        this.participant = status.participant
-        setupRtcConnection(participant)?.also {
+        this.participantId = status.participant
+        setupRtcConnection(participantId)?.also {
             it.offer()
         }
     }
@@ -123,8 +132,8 @@ class MainViewModel @Inject constructor(
                 super.onAddStream(p0)
                 p0?.let {
                     runCatching {
-                        remoteSurface?.let { remoteSrfc ->
-                            it.videoTracks[0]?.addSink(remoteSrfc)
+                        remoteSurface?.let { surface ->
+                            it.videoTracks[0]?.addSink(surface)
                         }
                     }
                 }
@@ -132,35 +141,33 @@ class MainViewModel @Inject constructor(
 
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
                 super.onConnectionChange(newState)
+                if (newState == PeerConnection.PeerConnectionState.CONNECTED) {
+                    firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.Connected)) {}
+                    firebaseClient.removeSelfData()
+                }
                 Log.d(TAG, "onConnectionChange: $newState")
             }
         }, listener = object : RTCClientImpl.TransferDataToServerCallback {
             override fun onIceGenerated(iceCandidate: IceCandidate) {
                 firebaseClient.updateParticipantDataModel(
-                    participantId = participant,
-                    data = SignalDataModel(
-                        type = SignalDataModelTypes.ICE,
-                        data = gson.toJson(iceCandidate)
+                    participantId = participant, data = SignalDataModel(
+                        type = SignalDataModelTypes.ICE, data = gson.toJson(iceCandidate)
                     )
                 )
             }
 
             override fun onOfferGenerated(sessionDescription: SessionDescription) {
                 firebaseClient.updateParticipantDataModel(
-                    participantId = participant,
-                    data = SignalDataModel(
-                        type = SignalDataModelTypes.OFFER,
-                        data = sessionDescription.description
+                    participantId = participant, data = SignalDataModel(
+                        type = SignalDataModelTypes.OFFER, data = sessionDescription.description
                     )
                 )
             }
 
             override fun onAnswerGenerated(sessionDescription: SessionDescription) {
                 firebaseClient.updateParticipantDataModel(
-                    participantId = participant,
-                    data = SignalDataModel(
-                        type = SignalDataModelTypes.ANSWER,
-                        data = sessionDescription.description
+                    participantId = participant, data = SignalDataModel(
+                        type = SignalDataModelTypes.ANSWER, data = sessionDescription.description
                     )
                 )
             }
@@ -180,6 +187,25 @@ class MainViewModel @Inject constructor(
 
     fun switchCamera() {
         webRTCFactory.switchCamera()
+    }
+
+    fun findNextMatch() {
+        if (matchState.value == MatchState.Connected) {
+            firebaseClient.updateParticipantStatus(
+                participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
+            )
+        }
+        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch)){}
+        rtcClient?.onDestroy()
+    }
+
+    fun stopLookingForMatch() {
+        if (matchState.value == MatchState.Connected) {
+            firebaseClient.updateParticipantStatus(
+                participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
+            )
+        }
+        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.IDLE)) {}
     }
 
     override fun onCleared() {

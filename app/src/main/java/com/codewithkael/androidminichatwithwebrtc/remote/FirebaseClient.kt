@@ -30,7 +30,7 @@ class FirebaseClient @Inject constructor(
             StatusDataModel(
                 type = LookingForMatch
             )
-        )
+        ) {}
         database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
             .child(FirebaseFieldNames.STATUS)
             .addValueEventListener(object : MyValueEventListener() {
@@ -43,8 +43,9 @@ class FirebaseClient @Inject constructor(
                             }
 
                             null -> {
-                                updateSelfStatus(StatusDataModel(type = LookingForMatch))
-                                callback(MatchState.LookingForMatchState)
+                                updateSelfStatus(StatusDataModel(type = LookingForMatch)) {
+                                    callback(MatchState.LookingForMatchState)
+                                }
                             }
 
                             OfferedMatch -> {
@@ -54,13 +55,15 @@ class FirebaseClient @Inject constructor(
                             ReceivedMatch -> {
                                 callback(MatchState.ReceivedMatchState(status.participant!!))
                             }
+
+                            StatusDataModelTypes.IDLE -> callback(MatchState.IDLE)
+                            StatusDataModelTypes.Connected -> callback(MatchState.Connected)
                         }
-                    } ?: let {
-                        updateSelfStatus(
-                            StatusDataModel(
-                                type = LookingForMatch
-                            )
+                    } ?: updateSelfStatus(
+                        StatusDataModel(
+                            type = LookingForMatch
                         )
+                    ) {
                         callback(MatchState.LookingForMatchState)
                     }
                 }
@@ -75,7 +78,7 @@ class FirebaseClient @Inject constructor(
                     runCatching {
                         gson.fromJson(snapshot.value.toString(), SignalDataModel::class.java)
                     }.onSuccess {
-                        if (it!=null){
+                        if (it != null) {
                             callback(it)
                         }
                     }.onFailure {
@@ -91,8 +94,15 @@ class FirebaseClient @Inject constructor(
             .setValue(gson.toJson(data))
     }
 
-    fun updateSelfStatus(status: StatusDataModel) {
+    fun updateSelfStatus(status: StatusDataModel, successListener: () -> Unit) {
         database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
+            .child(FirebaseFieldNames.STATUS).setValue(status).addOnSuccessListener {
+                successListener()
+            }
+    }
+
+    fun updateParticipantStatus(participantId: String, status: StatusDataModel) {
+        database.child(FirebaseFieldNames.USERS).child(participantId)
             .child(FirebaseFieldNames.STATUS).setValue(status)
     }
 
@@ -108,7 +118,7 @@ class FirebaseClient @Inject constructor(
                             participant = prefHelper.getUserId(), type = ReceivedMatch
                         )
                     )
-                updateSelfStatus(StatusDataModel(type = OfferedMatch, participant = target))
+                updateSelfStatus(StatusDataModel(type = OfferedMatch, participant = target)) {}
                 //start webrtc connection
             }
         }
@@ -140,7 +150,7 @@ class FirebaseClient @Inject constructor(
             })
     }
 
-    private fun removeSelfData() {
+    fun removeSelfData() {
         database.child(FirebaseFieldNames.USERS).child(prefHelper.getUserId())
             .child(FirebaseFieldNames.DATA).removeValue()
     }

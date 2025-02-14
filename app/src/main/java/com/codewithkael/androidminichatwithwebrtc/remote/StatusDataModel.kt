@@ -6,5 +6,5 @@ data class StatusDataModel(
 )
 
 enum class StatusDataModelTypes {
-    LookingForMatch, OfferedMatch, ReceivedMatch
+    IDLE, LookingForMatch, OfferedMatch, ReceivedMatch, Connected
 }
