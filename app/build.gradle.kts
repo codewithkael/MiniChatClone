@@ -60,7 +60,8 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     kapt(libs.hilt.compiler)
-
+    implementation(libs.composeIcons.evaIcons)
+    implementation(libs.composeIcons.feather)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.database.ktx)

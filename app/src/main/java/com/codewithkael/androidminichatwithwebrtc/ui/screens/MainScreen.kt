@@ -1,10 +1,14 @@
 package com.codewithkael.androidminichatwithwebrtc.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -34,8 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.codewithkael.androidminichatwithwebrtc.R
@@ -45,6 +49,9 @@ import com.codewithkael.androidminichatwithwebrtc.ui.viewmodels.MainViewModel
 import com.codewithkael.androidminichatwithwebrtc.utils.ChatItem
 import com.codewithkael.androidminichatwithwebrtc.utils.MatchState
 import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
+import compose.icons.FeatherIcons
+import compose.icons.feathericons.Play
+import compose.icons.feathericons.StopCircle
 
 @Composable
 fun MainScreen() {
@@ -214,7 +221,7 @@ fun MainScreen() {
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Refresh,
+                            imageVector = FeatherIcons.StopCircle,
                             contentDescription = "Stop",
                             tint = Color.White,
                             modifier = Modifier.size(25.dp)
@@ -232,7 +239,7 @@ fun MainScreen() {
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector = FeatherIcons.Play,
                             contentDescription = "Next",
                             tint = Color.White,
                             modifier = Modifier.size(25.dp)
@@ -242,18 +249,41 @@ fun MainScreen() {
             }
 
         }
-
-        // Footer for message input and action buttons
-
         // Footer text - rules and notice
-        Text(
-            text = "By using this video chat you agree with our rules. Rules violators will be banned. Try to keep your face visible in camera frame.",
-            modifier = Modifier
+        Row(
+            Modifier
                 .fillMaxWidth()
-                .weight(0.5f)
-                .padding(16.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Black
-        )
+                .weight(0.6f)
+                .padding(bottom = 15.dp, start = 5.dp, end = 5.dp)
+                .clickable {
+                    val intent = Intent(
+                        Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/@codewithkael")
+                    )
+                    context.startActivity(intent)
+                }
+                .background(color = Color(0xA4D6DFE5), shape = RoundedCornerShape(8.dp)),
+            horizontalArrangement = Arrangement.Absolute.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.youtube_logo),
+                contentDescription = "YouTube Channel",
+                modifier = Modifier
+                    .size(54.dp)
+                    .weight(1f),
+                contentScale = ContentScale.Fit
+            )
+            Text(
+                text = "To Learn how to create this app, Join my Youtube channel now !! \n www.Youtube.com/@CodeWithKael",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 5.dp, start = 10.dp, end = 10.dp)
+                    .weight(6f),
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelLarge
+            )
+
+        }
     }
 }

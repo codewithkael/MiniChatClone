@@ -229,13 +229,14 @@ class MainViewModel @Inject constructor(
     }
 
     fun findNextMatch() {
+        rtcClient?.onDestroy()
+
         if (matchState.value == MatchState.Connected) {
             firebaseClient.updateParticipantStatus(
                 participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
             )
         }
         firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch)) {}
-        rtcClient?.onDestroy()
     }
 
     fun stopLookingForMatch() {
@@ -253,5 +254,6 @@ class MainViewModel @Inject constructor(
         remoteSurface?.release()
         remoteSurface = null
         webRTCFactory.onDestroy()
+        rtcClient?.onDestroy()
     }
 }
