@@ -6,5 +6,5 @@ data class SignalDataModel(
 )
 
 enum class SignalDataModelTypes {
-    OFFER,ANSWER,ICE
+    OFFER,ANSWER,ICE,CHAT
 }

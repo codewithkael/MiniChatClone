@@ -1,5 +1,6 @@
 package com.codewithkael.androidminichatwithwebrtc.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +29,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,14 +39,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.codewithkael.androidminichatwithwebrtc.R
+import com.codewithkael.androidminichatwithwebrtc.ui.components.ChatSection
 import com.codewithkael.androidminichatwithwebrtc.ui.components.SurfaceViewRendererComposable
 import com.codewithkael.androidminichatwithwebrtc.ui.viewmodels.MainViewModel
+import com.codewithkael.androidminichatwithwebrtc.utils.ChatItem
 import com.codewithkael.androidminichatwithwebrtc.utils.MatchState
+import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
 
 @Composable
 fun MainScreen() {
     val viewModel: MainViewModel = hiltViewModel()
     val matchState = viewModel.matchState.collectAsState()
+    val chatState = viewModel.chatList.collectAsState()
+    Log.d(TAG, "MainScreen: ${chatState.value}")
+    val chatText = remember { mutableStateOf("") }
     val context = LocalContext.current
 
     // Permission request launcher
@@ -80,11 +89,9 @@ fun MainScreen() {
                 .weight(2.5f)
         ) {
             SurfaceViewRendererComposable(
-                modifier = Modifier.fillMaxSize(),
-                onSurfaceReady = { renderer ->
+                modifier = Modifier.fillMaxSize(), onSurfaceReady = { renderer ->
                     viewModel.initRemoteSurfaceView(renderer)
-                },
-                message = when (matchState.value) {
+                }, message = when (matchState.value) {
                     MatchState.LookingForMatchState -> "Looking For Match ..."
                     MatchState.IDLE -> "Not Looking For Match, Press Start"
                     else -> null
@@ -99,10 +106,9 @@ fun MainScreen() {
                 .weight(2f)
                 .padding(8.dp)
         ) {
-            //chat section here
-            Text(text = "Chat")
-
+            ChatSection(chatItems = chatState.value) // Displaying the chat list
         }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -159,21 +165,32 @@ fun MainScreen() {
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
                 ) {
-                    OutlinedTextField(value = "",
-                        onValueChange = {},
+                    // OutlinedTextField for chat input
+                    OutlinedTextField(value = chatText.value,
+                        onValueChange = { chatText.value = it },
                         label = { Text("Type your message") },
                         modifier = Modifier.weight(7f),
                         colors = TextFieldDefaults.colors(
-                            focusedTextColor = Color(0xFFA4BAD1), // Custom color for label when focused
-                            unfocusedTextColor = Color(0xFFA4BAD1), // Custom color for label when not focused
-                            focusedContainerColor = Color.White, // Custom color for container when focused
-                            unfocusedContainerColor = Color.White, // Custom color for container when not focused
+                            focusedTextColor = Color(0xFFA4BAD1),
+                            unfocusedTextColor = Color(0xFFA4BAD1),
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
                         )
                     )
 
-                    IconButton(onClick = { /* Handle record action */ }) {
+                    // Send button to add the chat item
+                    IconButton(onClick = {
+                        // Add the new chat item to the chat list in the ViewModel
+                        if (chatText.value.isNotEmpty()) {
+                            val newChatItem = ChatItem(text = chatText.value, isMine = true)
+                            viewModel.sendChatItem(newChatItem)
+                            chatText.value = "" // Clear the input field after sending
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send",

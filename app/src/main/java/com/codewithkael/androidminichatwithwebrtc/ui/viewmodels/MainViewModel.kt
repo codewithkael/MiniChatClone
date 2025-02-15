@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.codewithkael.androidminichatwithwebrtc.remote.FirebaseClient
 import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModel
 import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes
+import com.codewithkael.androidminichatwithwebrtc.utils.ChatItem
 import com.codewithkael.androidminichatwithwebrtc.utils.MatchState
 import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
 import com.codewithkael.androidminichatwithwebrtc.utils.SignalDataModel
@@ -43,6 +44,32 @@ class MainViewModel @Inject constructor(
     var matchState: MutableStateFlow<MatchState> = MutableStateFlow(MatchState.NewState)
         private set
 
+    var chatList: MutableStateFlow<List<ChatItem>> = MutableStateFlow(mutableListOf())
+    private fun addChatItem(newChatItem: ChatItem) {
+        Log.d(TAG, "addChatItem: $newChatItem")
+        // Get the current list from the MutableStateFlow
+        val currentList = chatList.value.toMutableList()
+
+        // Add the new chat item to the list
+        currentList.add(newChatItem)
+
+        // Update the StateFlow with the updated list
+        chatList.value = currentList
+        Log.d(TAG, "addChatItem: chat list here ${chatList.value}")
+    }
+
+    private fun resetChatList(){
+        chatList.value = mutableListOf()
+    }
+
+    fun sendChatItem(newChatItem: ChatItem) {
+        addChatItem(newChatItem)
+        firebaseClient.updateParticipantDataModel(
+            participantId = participantId,
+            data = SignalDataModel(type = SignalDataModelTypes.CHAT, data = newChatItem.text)
+        )
+    }
+
     init {
         rtcAudioManager.setDefaultAudioDevice(RTCAudioManager.AudioDevice.SPEAKER_PHONE)
     }
@@ -63,6 +90,8 @@ class MainViewModel @Inject constructor(
                 SignalDataModelTypes.OFFER -> handleReceivedOfferSdp(signalDataModel)
                 SignalDataModelTypes.ANSWER -> handleReceivedAnswerSdp(signalDataModel)
                 SignalDataModelTypes.ICE -> handleReceivedIceCandidate(signalDataModel)
+                SignalDataModelTypes.CHAT -> handleReceivedChatItem(signalDataModel)
+
                 null -> Unit
             }
         }
@@ -70,7 +99,17 @@ class MainViewModel @Inject constructor(
         findNextMatch()
     }
 
+    private fun handleReceivedChatItem(signalDataModel: SignalDataModel) {
+        addChatItem(
+            ChatItem(
+                text = signalDataModel.data.toString(),
+                isMine = false
+            )
+        )
+    }
+
     private fun handleLookingForMatch() {
+        resetChatList()
         rtcClient?.onDestroy()
         firebaseClient.findNextMatch()
     }
@@ -195,11 +234,12 @@ class MainViewModel @Inject constructor(
                 participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
             )
         }
-        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch)){}
+        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch)) {}
         rtcClient?.onDestroy()
     }
 
     fun stopLookingForMatch() {
+        resetChatList()
         if (matchState.value == MatchState.Connected) {
             firebaseClient.updateParticipantStatus(
                 participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
