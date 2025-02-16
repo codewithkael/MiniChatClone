@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.codewithkael.androidminichatwithwebrtc.remote.FirebaseClient
 import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModel
 import com.codewithkael.androidminichatwithwebrtc.remote.StatusDataModelTypes
@@ -20,6 +21,7 @@ import com.codewithkael.androidminichatwithwebrtc.webrtc.WebRTCFactory
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import org.webrtc.IceCandidate
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
@@ -46,28 +48,23 @@ class MainViewModel @Inject constructor(
 
     var chatList: MutableStateFlow<List<ChatItem>> = MutableStateFlow(mutableListOf())
     private fun addChatItem(newChatItem: ChatItem) {
-        Log.d(TAG, "addChatItem: $newChatItem")
-        // Get the current list from the MutableStateFlow
         val currentList = chatList.value.toMutableList()
-
-        // Add the new chat item to the list
         currentList.add(newChatItem)
-
-        // Update the StateFlow with the updated list
         chatList.value = currentList
-        Log.d(TAG, "addChatItem: chat list here ${chatList.value}")
     }
 
-    private fun resetChatList(){
+    private fun resetChatList() {
         chatList.value = mutableListOf()
     }
 
     fun sendChatItem(newChatItem: ChatItem) {
         addChatItem(newChatItem)
-        firebaseClient.updateParticipantDataModel(
-            participantId = participantId,
-            data = SignalDataModel(type = SignalDataModelTypes.CHAT, data = newChatItem.text)
-        )
+        viewModelScope.launch {
+            firebaseClient.updateParticipantDataModel(
+                participantId = participantId,
+                data = SignalDataModel(type = SignalDataModelTypes.CHAT, data = newChatItem.text)
+            )
+        }
     }
 
     init {
@@ -102,8 +99,7 @@ class MainViewModel @Inject constructor(
     private fun handleReceivedChatItem(signalDataModel: SignalDataModel) {
         addChatItem(
             ChatItem(
-                text = signalDataModel.data.toString(),
-                isMine = false
+                text = signalDataModel.data.toString(), isMine = false
             )
         )
     }
@@ -111,7 +107,9 @@ class MainViewModel @Inject constructor(
     private fun handleLookingForMatch() {
         resetChatList()
         rtcClient?.onDestroy()
-        firebaseClient.findNextMatch()
+        viewModelScope.launch {
+            firebaseClient.findNextMatch()
+        }
     }
 
     private fun handleReceivedIceCandidate(signalDataModel: SignalDataModel) {
@@ -181,34 +179,43 @@ class MainViewModel @Inject constructor(
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
                 super.onConnectionChange(newState)
                 if (newState == PeerConnection.PeerConnectionState.CONNECTED) {
-                    firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.Connected)) {}
-                    firebaseClient.removeSelfData()
+                    viewModelScope.launch {
+                        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.Connected))
+                        firebaseClient.removeSelfData()
+                    }
                 }
                 Log.d(TAG, "onConnectionChange: $newState")
             }
         }, listener = object : RTCClientImpl.TransferDataToServerCallback {
             override fun onIceGenerated(iceCandidate: IceCandidate) {
-                firebaseClient.updateParticipantDataModel(
-                    participantId = participant, data = SignalDataModel(
-                        type = SignalDataModelTypes.ICE, data = gson.toJson(iceCandidate)
+                viewModelScope.launch {
+                    firebaseClient.updateParticipantDataModel(
+                        participantId = participant, data = SignalDataModel(
+                            type = SignalDataModelTypes.ICE, data = gson.toJson(iceCandidate)
+                        )
                     )
-                )
+                }
             }
 
             override fun onOfferGenerated(sessionDescription: SessionDescription) {
-                firebaseClient.updateParticipantDataModel(
-                    participantId = participant, data = SignalDataModel(
-                        type = SignalDataModelTypes.OFFER, data = sessionDescription.description
+                viewModelScope.launch {
+                    firebaseClient.updateParticipantDataModel(
+                        participantId = participant, data = SignalDataModel(
+                            type = SignalDataModelTypes.OFFER, data = sessionDescription.description
+                        )
                     )
-                )
+                }
             }
 
             override fun onAnswerGenerated(sessionDescription: SessionDescription) {
-                firebaseClient.updateParticipantDataModel(
-                    participantId = participant, data = SignalDataModel(
-                        type = SignalDataModelTypes.ANSWER, data = sessionDescription.description
+                viewModelScope.launch {
+                    firebaseClient.updateParticipantDataModel(
+                        participantId = participant, data = SignalDataModel(
+                            type = SignalDataModelTypes.ANSWER,
+                            data = sessionDescription.description
+                        )
                     )
-                )
+                }
             }
 
         })
@@ -230,29 +237,33 @@ class MainViewModel @Inject constructor(
 
     fun findNextMatch() {
         rtcClient?.onDestroy()
-
-        if (matchState.value == MatchState.Connected) {
-            firebaseClient.updateParticipantStatus(
-                participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
-            )
+        viewModelScope.launch {
+            if (matchState.value == MatchState.Connected) {
+                firebaseClient.updateParticipantStatus(
+                    participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
+                )
+            }
+            firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch))
         }
-        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.LookingForMatch)) {}
     }
 
     fun stopLookingForMatch() {
-        resetChatList()
-        if (matchState.value == MatchState.Connected) {
-            firebaseClient.updateParticipantStatus(
-                participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
-            )
+        viewModelScope.launch {
+            resetChatList()
+            if (matchState.value == MatchState.Connected) {
+                firebaseClient.updateParticipantStatus(
+                    participantId, StatusDataModel(type = StatusDataModelTypes.LookingForMatch)
+                )
+            }
+            firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.IDLE))
         }
-        firebaseClient.updateSelfStatus(StatusDataModel(type = StatusDataModelTypes.IDLE)) {}
     }
 
     override fun onCleared() {
         super.onCleared()
         remoteSurface?.release()
         remoteSurface = null
+        firebaseClient.clear()
         webRTCFactory.onDestroy()
         rtcClient?.onDestroy()
     }
