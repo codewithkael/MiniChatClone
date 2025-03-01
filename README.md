@@ -9,7 +9,7 @@ This project demonstrates how to build a **real-time mini chat application** usi
 ---
 ## 🎥 Video Tutorial & Playlist
 
-📺 **Watch the full tutorial here:** [YouTube Playlist](https://youtube.com/playlist?list=YOUR_PLAYLIST_LINK)
+📺 **Watch the full tutorial here:** [YouTube Playlist](https://youtube.com/playlist?list=PLFelST8t9nqgqOFypRxdTQZ4xX9Ww6t8e&si=joSiiHfmLSuefaEu)
 
 ---
 ## 📡 Firebase Signaling Server
