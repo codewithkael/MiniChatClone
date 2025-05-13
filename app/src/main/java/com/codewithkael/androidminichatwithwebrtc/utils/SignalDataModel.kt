@@ -2,6 +2,7 @@ package com.codewithkael.androidminichatwithwebrtc.utils
 
 data class SignalDataModel(
     val type:SignalDataModelTypes?=null,
+    val encryptedAesKey:String?=null,
     val data:String?=null
 )
 

@@ -1,6 +1,8 @@
 package com.codewithkael.androidminichatwithwebrtc.cryptography.rsa
 
 
+import android.util.Log
+import com.codewithkael.androidminichatwithwebrtc.utils.MiniChatApplication.Companion.TAG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -30,6 +32,7 @@ class RSAServiceImpl : RSAService {
                 rsaCipher.doFinal(text.toByteArray())
             } catch (e: Exception) {
                 e.printStackTrace()
+                Log.d(TAG, "encryptText: ${e.message}")
                 return@withContext null
             }
             return@withContext Base64.getEncoder().encodeToString(encryptedBytes)
@@ -103,5 +106,43 @@ class RSAServiceImpl : RSAService {
         val privateKey = keyFactory.generatePrivate(privateKeySpec)
 
         return KeyPair(publicKey, privateKey)
+    }
+
+    override fun base64ToPublicKey(base64: String): PublicKey {
+        return try {
+            val keyBytes = Base64.getDecoder().decode(base64)
+            val keyFactory = KeyFactory.getInstance("RSA")
+            val keySpec = X509EncodedKeySpec(keyBytes)
+            keyFactory.generatePublic(keySpec)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Failed to convert Base64 string to public key: ${e.message}", e)
+        }
+    }
+
+    override fun base64ToPrivateKey(base64: String): PrivateKey {
+        return try {
+            val keyBytes = Base64.getDecoder().decode(base64)
+            val keyFactory = KeyFactory.getInstance("RSA")
+            val keySpec = PKCS8EncodedKeySpec(keyBytes)
+            keyFactory.generatePrivate(keySpec)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Failed to convert Base64 string to private key: ${e.message}", e)
+        }
+    }
+
+    override fun publicKeyToBase64(publicKey: PublicKey): String {
+        return try {
+            Base64.getEncoder().encodeToString(publicKey.encoded)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Failed to convert public key to Base64 string: ${e.message}", e)
+        }
+    }
+
+    override fun privateKeyToBase64(privateKey: PrivateKey): String {
+        return try {
+            Base64.getEncoder().encodeToString(privateKey.encoded)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Failed to convert private key to Base64 string: ${e.message}", e)
+        }
     }
 }

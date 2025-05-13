@@ -3,7 +3,7 @@ package com.codewithkael.androidminichatwithwebrtc.remote
 data class StatusDataModel(
     val participant: String? = null,
     val type: StatusDataModelTypes? = null,
-    val publicKey:String = "TestPublicKey",
+    val participantKey: String? = null,
 )
 
 enum class StatusDataModelTypes {
