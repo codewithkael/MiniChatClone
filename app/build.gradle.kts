@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.codewithkael.androidminichatwithwebrtc"
-        minSdk = 24
+        minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 34
         versionCode = 1
@@ -65,6 +65,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.database.ktx)
+    implementation(libs.bouncy.castle.prov)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

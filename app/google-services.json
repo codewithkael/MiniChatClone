@@ -1,14 +1,14 @@
 {
   "project_info": {
-    "project_number": "265262287682",
-    "firebase_url": "https://minichat-c29df-default-rtdb.europe-west1.firebasedatabase.app",
-    "project_id": "minichat-c29df",
-    "storage_bucket": "minichat-c29df.firebasestorage.app"
+    "project_number": "382675434951",
+    "firebase_url": "https://minichat-6a13b-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "minichat-6a13b",
+    "storage_bucket": "minichat-6a13b.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:265262287682:android:151ce9cb411af5824a56db",
+        "mobilesdk_app_id": "1:382675434951:android:1c0a341fc5f8571e412de2",
         "android_client_info": {
           "package_name": "com.codewithkael.androidminichatwithwebrtc"
         }
@@ -16,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDAimdLby0BrtfbO8oDv2zljDWtYBLC10Y"
+          "current_key": "AIzaSyBX8UUZ_DUcj3bw6G-SMiDI5gq2KhQ5vW8"
         }
       ],
       "services": {
