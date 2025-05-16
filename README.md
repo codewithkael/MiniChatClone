@@ -8,9 +8,19 @@ This project demonstrates how to build a **real-time mini chat application** usi
 4. **End-to-End Encryption** – Added cryptographic layer to secure signaling data using AES and RSA.
 
 ---
-## 🎥 Video Tutorial & Playlist
+## 🎥 Video Tutorials
 
-📺 **Watch the full tutorial here:** [YouTube Playlist](https://youtube.com/playlist?list=PLFelST8t9nqgqOFypRxdTQZ4xX9Ww6t8e&si=joSiiHfmLSuefaEu)
+📺 **🆕 New Secure Version Tutorial:**  
+Learn how to **secure WebRTC signaling** using **RSA & AES encryption** in this updated tutorial:  
+🔗 [Secure Mini Chat Tutorial (Playlist)](https://youtube.com/playlist?list=PLFelST8t9nqgTet16VoKfeiLMoO-SJW82&si=LlQcPaE7dH37fhKr)
+
+📺 **🧪 Previous Version – Basic Mini Chat Tutorial:**  
+Covers **real-time chat** with WebRTC and Firebase signaling (no encryption layer):  
+🔗 [Original Mini Chat Tutorial (Playlist)](https://youtube.com/playlist?list=PLFelST8t9nqgqOFypRxdTQZ4xX9Ww6t8e&si=joSiiHfmLSuefaEu)
+
+📺 **🔐 Android Cryptography Essentials:**  
+Learn how to implement **RSA & AES encryption in Android** with practical examples:  
+🔗 [Cryptography in Android Tutorial (Playlist)](https://youtube.com/playlist?list=PLFelST8t9nqhEK0TP72JFU0HTO3BQpH5o&si=p5_kgLJuG91Re0Ls)
 
 ---
 ## 📡 Firebase Signaling Server
@@ -52,7 +62,7 @@ The Android client is developed using **Kotlin**, **Jetpack Compose**, and **Web
 
 ✅ **Connection management** – Allows users to start/stop connections dynamically.
 
-🔗 **Source Code:** [Android Repository](https://github.com/codewithkael/MiniChatClone)
+🔗 **Source Code:** [Android Repository](https://github.com/codewithkael/MiniChatClone/tree/security)
 
 ---
 ## 🔄 Matchmaking & Connection Flow
